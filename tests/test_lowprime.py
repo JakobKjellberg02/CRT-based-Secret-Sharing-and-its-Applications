@@ -2,8 +2,8 @@ import unittest
 import os
 import sys
 sys.path.insert(0, os.path.abspath('src'))
-import share_distribution as sd
-import share_reconstruction as sr
+import crt_poly.share_distribution as sd
+import crt_poly.share_reconstruction as sr
 
 class TestWithALowPrimeAndLowThreshold(unittest.TestCase):
 

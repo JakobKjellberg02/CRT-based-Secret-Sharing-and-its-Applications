@@ -110,7 +110,7 @@ if __name__ == "__main__":
     print("Random polynomial α(x):", alpha)
 
     f, created_shares = shares(s, alpha, m_0, moduli)
-    print("\nCombined polynomial f(x):", f)
+    print("Combined polynomial f(x):", f)
     print("\nShares (s_i):")
     for i, new_shares in enumerate(created_shares):
         print(f"s_{i+1}(x): {new_shares}")
@@ -122,6 +122,6 @@ if __name__ == "__main__":
 
     reconstructed_the_secret = reconstruct_secret(reconstruct_shares, reconstruct_moduli
                                                   , m_0, p)
-    print("Reconstructed Secret:", reconstructed_the_secret)
+    print("\nReconstructed Secret:", reconstructed_the_secret)
 
 
