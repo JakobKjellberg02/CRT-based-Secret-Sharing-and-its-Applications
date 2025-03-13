@@ -1,7 +1,3 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),"..")))
-
 import unittest
 import crt_secret_sharing.poly_share_distribution as sd
 import crt_secret_sharing.poly_share_reconstruction as sr
