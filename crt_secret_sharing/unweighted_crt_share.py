@@ -1,7 +1,7 @@
 from random import randint as randomNumber
 from math import prod
-from primes import generate_party_primes, generate_prime
-from crt import modinv
+from crt_secret_sharing.util_primes import generate_party_primes, generate_prime
+from crt_secret_sharing.util_crt import modinv
 
 def share_distribution(small_s, p_0, p_i, L):
     u_L = randomNumber(1, L)
@@ -35,6 +35,7 @@ if __name__ == "__main__":
     print("Secret:", small_s)
     print("Lifted S:", big_s)
     print("Shares:", shares)
+    
     test_number = 3
     shares_subset = shares[:test_number]
     primes_subset = p_i[:test_number]

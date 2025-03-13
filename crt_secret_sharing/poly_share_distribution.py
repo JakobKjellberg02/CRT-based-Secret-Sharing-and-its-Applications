@@ -8,7 +8,7 @@ Based on Section 3 (Threshold Scheme based on CRT for Polynomial Ring over Finit
 from sympy import Poly, gcd
 from sympy.abc import x
 import random
-from share_reconstruction import reconstruct_secret
+from crt_secret_sharing.poly_share_reconstruction import reconstruct_secret
 
 def irreducible_poly_test(f, p):
     d = f.degree()
