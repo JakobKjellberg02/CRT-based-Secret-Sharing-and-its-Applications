@@ -95,9 +95,9 @@ if __name__ == "__main__":
     Subsection 3.1 (The Scheme)
     """
     # Parameters that will get initialized if ran as main script
-    d_0 = 3        # Degree 
-    p = 283         # Prime integer 
-    threshold = (7,3)    # Threshold 
+    d_0 = 7        # Degree 
+    p = 347        # Prime integer 
+    threshold = (3,2)    # Threshold 
     n,t = threshold
     m_0, moduli = scheme_setup(p, d_0, n, t)
     print("m_0:", m_0)
@@ -116,7 +116,7 @@ if __name__ == "__main__":
         print(f"s_{i+1}(x): {new_shares}")
     
     # --- TEST ---
-    reconstruction_index = [0,1,2,3]
+    reconstruction_index = [0,1]
     reconstruct_shares = [created_shares[i] for i in reconstruction_index]
     reconstruct_moduli = [moduli[i] for i in reconstruction_index]
 
