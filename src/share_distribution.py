@@ -8,7 +8,7 @@ Based on Section 3 (Threshold Scheme based on CRT for Polynomial Ring over Finit
 from sympy import Poly, gcd
 from sympy.abc import x
 import random
-from share_reconstruction import *
+from share_reconstruction import reconstruct_secret
 
 def irreducible_poly_test(f, p):
     d = f.degree()
@@ -81,14 +81,12 @@ def shares(s, alpha, m_0, moduli):
     shares = [f % m for m in moduli]
     return f, shares
 
-def scheme_setup(p: int, d_0: int, n : int) -> Poly:
+def scheme_setup(p: int, d_0: int, n : int, t: int) -> Poly:
     m_0 = Poly(x ** d_0, x, modulus = p)
     moduli = generation_algorithm_of_random_irreducible_polynomial(p, d_0, n, m_0)
 
     if not poly_satisfaction(m_0, moduli, t):
         raise ValueError("Polynomials do not satisfy the expressions")
-    else:
-        print("--- SUCCESSFUL CHECK FOR POLYS ---")
 
     return m_0, moduli
 
@@ -97,32 +95,33 @@ if __name__ == "__main__":
     Subsection 3.1 (The Scheme)
     """
     # Parameters that will get initialized if ran as main script
-    d_0 = 3        # Degree 
-    p = 11         # Prime integer 
+    d_0 = 7        # Degree 
+    p = 347        # Prime integer 
     threshold = (3,2)    # Threshold 
     n,t = threshold
-    m_0, moduli = scheme_setup(p, d_0, n)
+    m_0, moduli = scheme_setup(p, d_0, n, t)
     print("m_0:", m_0)
-    print("\nIrreducible polynomials (moduli):")
+    print("\nIrreducible polynomials:")
     for i, poly in enumerate(moduli):
-        print(f"f_{i+1} = {poly}")
+        print(f"m_{i+1} = {poly}")
     
     s, alpha = generate_secret(p, d_0, moduli, t)
     print("\nSecret polynomial s(x):", s)
     print("Random polynomial α(x):", alpha)
 
-    f, shares = shares(s, alpha, m_0, moduli)
+    f, created_shares = shares(s, alpha, m_0, moduli)
     print("\nCombined polynomial f(x):", f)
     print("\nShares (s_i):")
-    for i, share in enumerate(shares):
-        print(f"s_{i+1}(x): {share}")
+    for i, new_shares in enumerate(created_shares):
+        print(f"s_{i+1}(x): {new_shares}")
     
     # --- TEST ---
     reconstruction_index = [0,1]
-    reconstruct_shares = [shares[i] for i in reconstruction_index]
-    reconstruct_shares = [moduli[i] for i in reconstruction_index]
+    reconstruct_shares = [created_shares[i] for i in reconstruction_index]
+    reconstruct_moduli = [moduli[i] for i in reconstruction_index]
 
-    reconstructed_the_secret = reconstruct_secret(shares, moduli, m_0, p)
+    reconstructed_the_secret = reconstruct_secret(reconstruct_shares, reconstruct_moduli
+                                                  , m_0, p)
     print("Reconstructed Secret:", reconstructed_the_secret)
 
 
