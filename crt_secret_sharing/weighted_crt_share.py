@@ -6,8 +6,8 @@ from crt_secret_sharing.util_crt import modinv
 def share_distribution(small_s, p_0, p_i, L):
     u_L = randomNumber(1, L)
     big_s = small_s + p_0 * u_L
-    p_i = [big_s % p for p in p_i]
-    return big_s, p_i
+    shares = [big_s % p for p in p_i]
+    return big_s, shares
 
 def share_reconstruction(p_0, p_subset, shares_subset):
     P = prod(p_subset)
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     print("Shares:", shares)
     print("Weights:", weights)
 
-    test_number = 2
+    test_number = 3
     shares_subset = shares[:test_number]
     primes_subset = p_i[:test_number]
     print(f"Using first {test_number} shares and primes for reconstruction.")
