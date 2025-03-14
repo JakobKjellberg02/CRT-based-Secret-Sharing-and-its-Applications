@@ -75,7 +75,7 @@ if __name__ == "__main__":
     print("Shares:", shares)
     print("Weights:", weights)
 
-    test_number = 4
+    test_number = 2
     shares_subset = shares[:test_number]
     primes_subset = p_i[:test_number]
     print(f"Using first {test_number} shares and primes for reconstruction.")
