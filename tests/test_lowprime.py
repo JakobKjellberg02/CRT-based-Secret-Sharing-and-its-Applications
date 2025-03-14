@@ -41,7 +41,6 @@ class TestWithALowPrimeAndLowThreshold(unittest.TestCase):
         reconstructed_the_secret = wcs.share_reconstruction(p_0, primes_subset, shares_subset)
         self.assertEqual(reconstructed_the_secret, small_s)
 
-
 if __name__ == '__main__':
     unittest.main()
 
