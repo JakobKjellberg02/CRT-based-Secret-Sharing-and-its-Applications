@@ -1,4 +1,5 @@
 from random import randint as randomNumber
+import secrets
 from math import prod
 from crt_secret_sharing.util_primes import generate_weighted_party_primes, generate_prime
 from crt_secret_sharing.util_crt import modinv
@@ -50,17 +51,9 @@ def compute_random_L(P_min, P_max, p_0, p_lambda):
         raise ValueError("Cannot satisfy correctness and privacy")
     return L
 
-if __name__ == "__main__":
-    n = 5
-    T = 19
-    t = 12
-    weights = [3,7,9,10,12]
-    small_s = 420420
-    p_lambda = 64
-
+def WRSS_setup(p_0, small_s, weights, T, t, p_lambda):
     c = max(1, p_lambda // (T - t + 1))
 
-    p_0 = generate_prime(p_lambda)
     p_i = generate_weighted_party_primes(p_0, weights, c)
 
     P_min = approx_min_product_weights(T, weights, p_i)
@@ -68,6 +61,21 @@ if __name__ == "__main__":
     L = compute_random_L(P_min, P_max, p_0, p_lambda)
 
     big_s, shares = share_distribution(small_s, p_0, p_i, L)
+    return big_s, shares, p_i
+
+
+if __name__ == "__main__":
+    n = 5
+    T = 19
+    t = 12
+    weights = [3,7,9,10,12]
+    p_lambda = 256
+
+    p_0 = generate_prime(p_lambda)
+    small_s = secrets.randbelow(p_0)
+
+    big_s, shares, p_i = WRSS_setup(p_0, small_s, weights, T, t, p_lambda)
+    
     print("p_0", p_0)
     print("p_i", p_i)
     print("Secret:", small_s)

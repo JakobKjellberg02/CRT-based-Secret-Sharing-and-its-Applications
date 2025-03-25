@@ -1,41 +1,48 @@
-from random import randint as randomNumber
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+import secrets
 from crt_secret_sharing.util_primes import generate_prime
-from crt_secret_sharing.weighted_crt_share import generate_weighted_party_primes, approx_max_product_weights, approx_min_product_weights, compute_random_L, share_distribution
+from crt_secret_sharing.weighted_crt_share import WRSS_setup
 
-def setup(p):
-    g = randomNumber(2, p-1)
-    s = randomNumber(1, p-1)
-    h = pow(g, s, p)
-    return g, s, h
+def universal_hashing(x):
+    digest = hashes.Hash(hashes.SHA256())
+    digest.update(str(x).encode())
+    return int.from_bytes(digest.finalize(), 'big')
 
-def encryption():
-    r = randomNumber(1, p-1)
+def randomness_extractor(s, X, p):
+    hkdfsha256 = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=None,
+        info=s.to_bytes(32, 'big')
+    )
+    return int.from_bytes(hkdfsha256.derive(str(X).encode()),'big') % p
+
+
+#def encryption():
+    F_p = generate_prime(randomNumber(2 ** (p_lambda - 1), 2 ** p_lambda - 1))
+    r = randomNumber(1, F_p-1)
     c1 = pow(g, r, p)
-    sd = randomNumber(1, p-1)
+    sd = randomNumber(1, F_p1)
+    seed = randomNumber(1, p-1)
+    sd_extract = extractor(seed, sd, p)
+    c2 = (m * sd_extract) % p
+    H_sd = randomNumber(sd)
+    return (c1, c2, seed, H_sd), r
     
 
 if __name__ == "__main__":
-    n = 5
     T = 19
     t = 12
     weights = [3,7,9,10,12]
-    p_lambda = 64
+    p_lambda = 256
 
-    c = max(1, p_lambda // (T - t + 1))
     p_0 = generate_prime(p_lambda)
-    g, s, h = setup(p_0, p_lambda)
-    p_i = generate_weighted_party_primes(p_0, weights, c)
+    small_s = secrets.randbelow(p_0)
 
-    P_min = approx_min_product_weights(T, weights, p_i)
-    P_max = approx_max_product_weights(t, weights, p_i)
-    L = compute_random_L(P_min, P_max, p_0, p_lambda)
-    
-    big_s, shares = share_distribution(s, p_0, p_i, L)
-    print("\nWeighted CRT Secret Sharing:")
-    print("p_0 =", p_0)
-    print("p_i =", p_i)
-    print("Secret key s =", s)
-    print("Lifted secret S =", big_s)
-    print("Shares =", shares)
-    print("Weights =", weights)
+    big_s, shares, p_0, p_i = WRSS_setup(p_0, small_s, weights, T, t, p_lambda)
+
+    sd = secrets.SystemRandom.getrandbits(32)
+0
+
 
