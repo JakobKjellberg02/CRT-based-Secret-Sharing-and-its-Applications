@@ -69,13 +69,13 @@ if __name__ == "__main__":
     T = 19
     t = 12
     weights = [3,7,9,10,12]
-    p_lambda = 256
+    p_lambda = 64
 
     p_0 = generate_prime(p_lambda)
     small_s = secrets.randbelow(p_0)
 
     big_s, shares, p_i = WRSS_setup(p_0, small_s, weights, T, t, p_lambda)
-    
+
     print("p_0", p_0)
     print("p_i", p_i)
     print("Secret:", small_s)
