@@ -22,8 +22,7 @@ def randomness_extractor(s, X, p):
 
 def sample_group(p_lambda):
     p_0 = generate_prime(p_lambda)
-    # small_g = secrets.randbelow(p_0 - 2) + 2
-    small_g = 2
+    small_g = secrets.randbelow(p_0 - 2) + 2
     return small_g, p_0
 
 def keygen(p_lambda):
