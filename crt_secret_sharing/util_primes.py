@@ -18,7 +18,7 @@ def generate_party_primes(n, p_0, p_lambda):
 def generate_weighted_party_primes(p_0, weights, c):
     primes = set()
     for w in weights:
-        prime_length = max(c * w, 64)
+        prime_length = c * w
         while True:
             random_int = secrets.SystemRandom().randint(2 ** (prime_length - 1), 2 ** prime_length - 1)
             prime = nextprime(random_int)
