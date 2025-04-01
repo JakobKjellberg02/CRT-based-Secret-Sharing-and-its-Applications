@@ -1,28 +1,28 @@
 import secrets
-from sympy import nextprime
+from Crypto.Util.number import getPrime, GCD
 
-def generate_prime(p_lambda):
-    return nextprime(2 ** p_lambda)
-    
 def generate_party_primes(n, p_0, p_lambda):
     primes = set()
-    min_val = 2 ** (p_lambda - 1)
-    max_val = 2 ** p_lambda - 1
     while len(primes) < n:
-        random_int = secrets.SystemRandom().randint(min_val, max_val)
-        prime = nextprime(random_int)
+        prime = getPrime(p_lambda)
         if prime != p_0 and prime not in primes:
             primes.add(prime)
     return sorted(primes)
 
 def generate_weighted_party_primes(p_0, weights, c):
-    primes = set()
-    for w in weights:
-        prime_length = c * w
+    num_p = len(weights)
+    p_i = [0] * num_p
+    generated_primes = {p_0}
+
+    for i, w in enumerate(weights):
+        prime_length = max(8, c*w)
         while True:
-            random_int = secrets.SystemRandom().randint(2 ** (prime_length - 1), 2 ** prime_length - 1)
-            prime = nextprime(random_int)
-            if prime != p_0 and prime not in primes:
-                primes.add(prime)
+            prime = getPrime(prime_length)
+            if prime not in generated_primes and GCD(prime, p_0) == 1:
+                p_i[i] = prime
+                generated_primes.add(prime)
                 break
-    return sorted(primes)
+        
+    if 0 in p_i:
+        raise ValueError(f"Failed to generate unique primes")
+    return p_i

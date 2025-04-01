@@ -1,7 +1,8 @@
 from random import randint as randomNumber
 from math import prod
-from crt_secret_sharing.util_primes import generate_party_primes, generate_prime
+from crt_secret_sharing.util_primes import generate_party_primes
 from crt_secret_sharing.util_crt import modinv
+from Crypto.Util.number import getPrime
 
 def share_distribution(small_s, p_0, p_i, L):
     u_L = randomNumber(1, L)
@@ -25,7 +26,7 @@ if __name__ == "__main__":
     n,t = threshold
     small_s = 420420
     p_lambda = 64
-    p_0 = generate_prime(p_lambda)
+    p_0 = getPrime(p_lambda)
     p_i = generate_party_primes(n, p_0, p_lambda)
 
     P_min = prod(sorted(p_i)[:t])
