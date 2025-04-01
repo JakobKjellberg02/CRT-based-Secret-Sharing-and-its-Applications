@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     big_s, shares, p_i = WRSS_setup(p_0, small_s, weights, T, t, p_lambda)
 
-    test_number = 2
+    test_number = 3
     shares_subset = shares[:test_number]
     prime_subset = p_i[:test_number]
 
