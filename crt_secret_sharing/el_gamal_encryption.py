@@ -118,10 +118,10 @@ if __name__ == "__main__":
 
     big_s, shares, p_i = WRSS_setup(q, small_s, weights, T, t, p_lambda)
 
-    participants = {3,4}
+    participants = {2,3,4}
     session_weight = sum(weights[i] for i in participants)
 
-    plaintext = 420420
+    plaintext = 42042069
     ciphertext, random_r = encrypt(plaintext, h, small_g, p_0, q)
     c2, seed, c1, h_k = ciphertext
 
