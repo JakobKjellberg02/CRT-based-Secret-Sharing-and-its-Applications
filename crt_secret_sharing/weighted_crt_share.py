@@ -82,7 +82,7 @@ if __name__ == "__main__":
     T = 25
     t = 10
     weights = [3,7,9,10,12]
-    p_lambda = 16
+    p_lambda = 64
 
     p_0 = getPrime(p_lambda)
     small_s = secrets.randbelow(p_0)

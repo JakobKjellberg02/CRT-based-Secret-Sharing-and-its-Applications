@@ -1,4 +1,4 @@
-import secrets
+import math
 from Crypto.Util.number import getPrime, GCD
 
 def generate_party_primes(n, p_0, p_lambda):
@@ -15,10 +15,10 @@ def generate_weighted_party_primes(p_0, weights, c):
     generated_primes = {p_0}
 
     for i, w in enumerate(weights):
-        prime_length = max(8, c*w)
+        prime_length = max(16, math.ceil(c*w))
         while True:
             prime = getPrime(prime_length)
-            if prime not in generated_primes and GCD(prime, p_0) == 1:
+            if all(GCD(prime, p) == 1 for p in generated_primes):
                 p_i[i] = prime
                 generated_primes.add(prime)
                 break
