@@ -2,25 +2,8 @@ import math
 import secrets
 from math import prod
 from crt_secret_sharing.util_primes import generate_weighted_party_primes
-from crt_secret_sharing.util_crt import modinv
 from Crypto.Util.number import getPrime
-
-def share_distribution(small_s, p_0, p_i, L):
-    u_L = secrets.randbelow(L)
-    big_s = small_s + p_0 * u_L
-    shares = [big_s % p for p in p_i]
-    return big_s, shares
-
-def share_reconstruction(p_0, p_subset, shares_subset):
-    P = prod(p_subset)
-    result = 0
-    for s_i, p_i in zip(shares_subset, p_subset):
-        Q_i = P // p_i
-        inv_Q_i = modinv(Q_i, p_i)
-        result += s_i * Q_i * inv_Q_i
-    S = result % P
-    secret = S % p_0
-    return secret
+from crt_secret_sharing.unweighted_crt_share import share_distribution, share_reconstruction
 
 def approx_min_product_weights(min_weight, weights, p_i):
     sorted_pairs = sorted(zip(weights, p_i), key=lambda x: x[1])

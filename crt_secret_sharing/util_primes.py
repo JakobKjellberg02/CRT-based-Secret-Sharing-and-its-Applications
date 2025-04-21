@@ -15,7 +15,7 @@ def generate_weighted_party_primes(p_0, weights, c):
     generated_primes = {p_0}
 
     for i, w in enumerate(weights):
-        prime_length = max(16, math.ceil(c*w))
+        prime_length = max(8, math.ceil(c*w))
         while True:
             prime = getPrime(prime_length)
             if all(GCD(prime, p) == 1 for p in generated_primes):
