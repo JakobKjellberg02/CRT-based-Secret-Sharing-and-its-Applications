@@ -1,5 +1,13 @@
 import math
-from Crypto.Util.number import getPrime, GCD
+from Crypto.Util.number import getPrime, isPrime, GCD
+
+def pairwise_coprime(primes):
+    if not all(isPrime(p) for p in primes):
+        raise ValueError("Given integer is not prime.")
+    return len(primes) == len(set(primes))
+
+def primes_within_bitlength(primes, p_lambda):
+    return all(p.bit_length() <= p_lambda for p in primes)
 
 def generate_party_primes(n, p_0, p_lambda):
     primes = set()
