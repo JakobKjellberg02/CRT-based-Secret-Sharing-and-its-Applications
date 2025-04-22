@@ -1,5 +1,5 @@
 import unittest
-import crt_secret_sharing.weighted_crt_share as wcs
+import crt_secret_sharing.weighted_crt_ss as wcs
 import crt_secret_sharing.util_primes as up
 
 

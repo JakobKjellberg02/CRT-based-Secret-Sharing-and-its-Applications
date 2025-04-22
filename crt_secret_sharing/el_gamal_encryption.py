@@ -3,7 +3,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 import secrets
 import sympy
 from crt_secret_sharing.util_crt import modinv
-from crt_secret_sharing.weighted_crt_share import WRSS_setup
+from crt_secret_sharing.weighted_crt_ss import WRSS_setup
 from Crypto.Util.number import getPrime
 
 def universal_hashing(x):

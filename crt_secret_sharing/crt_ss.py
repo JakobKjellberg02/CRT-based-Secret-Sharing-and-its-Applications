@@ -1,10 +1,10 @@
 import secrets
 from math import prod
 from typing import List, Optional
+from Crypto.Util.number import getPrime, isPrime
 from crt_secret_sharing.util_primes import generate_party_primes, pairwise_coprime, primes_within_bitlength
 from crt_secret_sharing.util_crt import modinv
 from crt_secret_sharing.bcolors import bcolors as bc
-from Crypto.Util.number import getPrime, isPrime
 
 # --- Core functions for CRT-SS ---
 
@@ -14,7 +14,8 @@ def share_distribution(p_lambda: int,
                        small_s : int, 
                        p_0 : Optional[int], 
                        p_i : Optional[List[int]], 
-                       cand_L : Optional[int]) -> tuple[int, List[int], int, List[int]]:
+                       cand_L : Optional[int],
+                       weighted: bool) -> tuple[int, List[int], int, List[int]]:
     """
     Setup scheme for Access Structure, Parameters and Share the secret.
 
@@ -34,6 +35,8 @@ def share_distribution(p_lambda: int,
             Optional argument for List of distinct coprime integers for each shareholder.
         cand_L : Optional[int]
             Optional argument for The upper bound for masking.
+        weighted : bool
+            Flag for weighted.
 
     Returns
     -------
@@ -55,10 +58,11 @@ def share_distribution(p_lambda: int,
         print(bc.WARNING + f"Bit-length is recommended to be at least 128." + bc.ENDC)
     print(bc.OKGREEN + f"Security parameter is ({p_lambda}) bit length.")
 
-    # Validate that threshold does not exceed shareholders
-    if n < t:
+    # Validate that threshold does not exceed shareholders for unweighted
+    if n < t and not weighted:
         raise ValueError(f"The amount of shareholders ({n}) must not be less threshold ({t}).")
-    print(bc.OKGREEN + f"Amount of shareholder ({n}) and threshold ({t})." + bc.ENDC)
+    elif not weighted:
+        print(bc.OKGREEN + f"Amount of shareholder ({n}) and threshold ({t})." + bc.ENDC)
     
     # Validation of order
     if p_0 is None:
@@ -75,8 +79,11 @@ def share_distribution(p_lambda: int,
         "or more entries of then given amount of Shareholders")
     print(bc.OKGREEN + f"The distict primes ({p_i})." + bc.ENDC)
     
-    # Correctness of scheme
-    L = crt_correctness(p_0, p_i, t, cand_L) 
+    # Correctness of scheme if unweighted
+    if not weighted:
+        L = crt_correctness(p_0, p_i, t, cand_L) 
+    else:
+        L = cand_L
     print(bc.OKGREEN + f"The upper bound limit ({L})" + bc.ENDC)    
 
     # Uniformly distributed random integer
@@ -198,7 +205,7 @@ if __name__ == "__main__":
 
     It will reconstruct successfully given Authorized set A
     """
-    big_s, shares, p_0, p_i = share_distribution(128, 3, 2, 420420, None, None, None)
+    big_s, shares, p_0, p_i = share_distribution(128, 3, 2, 420420, None, None, None, False)
     test_number = 2
     shares_subset = shares[:test_number]
     primes_subset = p_i[:test_number]
