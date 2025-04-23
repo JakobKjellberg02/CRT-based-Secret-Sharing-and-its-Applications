@@ -3,7 +3,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 import secrets
 import sympy
 from crt_secret_sharing.util_crt import modinv
-from crt_secret_sharing.weighted_crt_ss import WRSS_setup
+from crt_secret_sharing.weighted_crt_ss import weighted_setup
 from Crypto.Util.number import getPrime
 
 def universal_hashing(x):
@@ -109,17 +109,18 @@ def decrypt(c2, reconstruction, sd, p_0):
             
 if __name__ == "__main__":
     n = 5
-    T = 57
-    t = 50
-    weights = [16,17,18,19,20]
-    p_lambda = 32
+    T = 25
+    t = 20
+    weights = [3,7,9,10,12]
+    p_lambda = 256
 
     p_0, q, small_g, small_s, h = keygen(p_lambda)
 
-    big_s, shares, p_i = WRSS_setup(q, small_s, weights, T, t, p_lambda)
+    big_s, shares, q, p_i = weighted_setup(p_lambda, n, T, t, weights, small_s, q)
 
-    participants = {2,3,4}
+    participants = {1,2,3}
     session_weight = sum(weights[i] for i in participants)
+    print(f"Session weight ({session_weight})")
 
     plaintext = 42042069
     ciphertext, random_r = encrypt(plaintext, h, small_g, p_0, q)
@@ -134,5 +135,3 @@ if __name__ == "__main__":
     decrypted_message = decrypt(c2, k_constructed, seed, p_0)
     print(decrypted_message)
     
-
-

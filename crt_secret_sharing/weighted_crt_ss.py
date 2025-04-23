@@ -15,7 +15,7 @@ def approx_min_product_weights(min_weight : int, weights : List[int], p_i : List
     Parameters
     ----------
         min_weight : int
-            The minimum weight for approx.
+            The minimum weight for an authroized set.
         weights : List[int]
             List of shareholder's weights.
         p_i : List[int]
@@ -69,32 +69,44 @@ def approx_max_product_weights(max_weight : int, weights : List[int], p_i : List
 
 def compute_valid_L(P_min : int, P_max : int, p_0 : int, p_lambda : int) -> int:
     """
-    Work in progress for weighted but computation should be looked at for both schemes.
+    Computing the valid L for weighted ramp secret sharing.
 
     Parameters
     ----------
         P_min : int
-            min. approx.
+            Min. approx.
+        P_max : int
+            Max. approx.
+        p_0 : int:
+            Order of field F.
+        p_lambda : int
+            Security parameter of bit length.
 
     Returns
     -------
-        primes : int
-            Product of primes.
+        upper_bound : int
+            Largest possible L.
     """
+    # Validate that P_min and P_max didn't mess up
     if P_min <= 0 or P_max <= 0:
         raise ValueError("P_min and P_max must be positive")
+    
+    # Security lower bound (leakage)
     lower_bound = P_max * (1 << p_lambda) + 1
+
+    # Correctness upper bound
     upper_bound = P_min // p_0
 
+    # Validate that the upper bound is larger than lower bound
     if lower_bound >= upper_bound:
-        raise ValueError("SOMETHING WENT REALLY WRONG")
+        raise ValueError("Could not satisfy both correcntess and security for weighted.")
     return lower_bound
 
 # --- Computation of gap ---
 
 def compute_c(T : int, t : int, p_lambda : int) -> int:
     """
-    Computes the gap between the thresholds for Ramp setting
+    Computes the constant needed for the ramp setting to hold. 
 
     Parameters
     ----------
@@ -115,8 +127,8 @@ def compute_c(T : int, t : int, p_lambda : int) -> int:
         raise ValueError(f"The Reconstruction threshold ({T}) must be larger than Privacy threshold ({t}).")
     req_prod = 2 * p_lambda + 1 
     c = ceil(req_prod / gap)
-    c = max(1, c)
-    return c
+    # c >= ceil((2 * p_lambda + 1) / (T - t))
+    return max(1, c)
 
 # --- Weighted CRT-SS Setup ---
 
@@ -128,6 +140,37 @@ def weighted_setup(p_lambda: int,
                        small_s: int,
                        p_0 : Optional[int],
                        ):
+    """
+    Setup for WRSS using CRT-based Secret Sharing.
+
+    Parameters
+    ----------
+        p_lambda : int
+            Security parameter of bit length.
+        n : int
+            Number of shareholders.
+        T : int
+            Reconstruction threshold.
+        t : int 
+            Privacy threshold.
+        weights : List[int]
+            Weights for the shareholders.
+        small_s : int 
+            The secret integer from Field F_p0.
+        p_0 : Optional[int]
+            Optional argument for the order of field F.
+    Returns
+    -------
+        big_s : int 
+            Lifting of the secret(s) known as Lift(s).
+        s_i : List[int]
+            List(s_i) of the shareholder's secret.
+        p_0 : int
+            Order of field F.
+        p_i : List[int]
+            List of distinct coprime integers for each shareholder.
+
+    """
     
     if len(weights) > n:
         raise ValueError(f"Entries of weight ({len(weights)}) should not exceed shareholders ({n})")
@@ -152,7 +195,7 @@ def weighted_setup(p_lambda: int,
     P_max = approx_max_product_weights(t, weights, p_i)
     L = compute_valid_L(P_min, P_max, p_0, p_lambda)
 
-    big_s, shares, p_0, p_i = share_distribution(128, n, T, small_s, p_0, p_i, L, True)
+    big_s, shares, p_0, p_i = share_distribution(p_lambda, n, T, small_s, p_0, p_i, L, True)
     return big_s, shares, p_0, p_i
 
 # --- Main ---
@@ -161,15 +204,20 @@ if __name__ == "__main__":
     n = 5
     T = 25
     t = 10
-    weights = [3,7,9,10,12]
-    p_lambda = 16
+    weights = [2,7,9,10,12]
+    p_lambda = 128
 
-    big_s, shares, p_0, p_i = weighted_setup(128, n, T, t, weights, 420420, None)
+    big_s, shares, p_0, p_i = weighted_setup(p_lambda, n, T, t, weights, 420420, None)
     
-    test_number = 3
-    shares_subset = shares[:test_number]
-    primes_subset = p_i[:test_number]
-    print(f"Using first {test_number} shares and primes for reconstruction.")
+    shareholders = {0,3,4}
+    session_weight = sum(weights[i] for i in shareholders)
+
+    shares_subset = [shares[i] for i in shareholders]
+    primes_subset = [p_i[i] for i in shareholders]
+    
+    print(f"Session weight ({session_weight})")
+    print(f"Using participants {shareholders} for reconstruction.")
+
     reconstructed_secret = share_reconstruction(p_0, primes_subset, shares_subset)
 
     
