@@ -1,10 +1,9 @@
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 import secrets
-import sympy
 from crt_secret_sharing.util_crt import modinv
 from crt_secret_sharing.weighted_crt_ss import weighted_setup
-from Crypto.Util.number import getPrime
+from Crypto.Util.number import getPrime, isPrime
 
 def universal_hashing(x):
     digest = hashes.Hash(hashes.SHA256())
@@ -38,7 +37,7 @@ def sample_group(p_lambda):
     while True:
         q = getPrime(p_lambda)
         p_0 = 2 * q + 1
-        if sympy.isprime(p_0):
+        if isPrime(p_0):
             small_g = find_generator(p_0, q)
             return p_0, q, small_g
 
@@ -49,7 +48,7 @@ def keygen(p_lambda):
     return p_0, q, small_g, s, h
 
 def encrypt(m, h, small_g, p_0, q):
-    r = secrets.randbelow(q - 1)
+    r = secrets.randbelow(q - 1) + 1
     c1 = pow(small_g, r, p_0)
     k = pow(h, r, p_0)
     sd = secrets.randbits(16)
@@ -59,21 +58,20 @@ def encrypt(m, h, small_g, p_0, q):
 
     return (c2, sd, c1, h_k), r
 
-def langrange_coeffs(index, participants, p_i):
-    mod = p_i[index]
+def lagrange_coeffs(index, participants, p_i):
     P = 1
     for j in participants:
-        if index != j:
-            p_j = p_i[j]
-            P *= p_j
-    inv_P = modinv(P, mod)
-    return P * inv_P
+        P *= p_i[j]
+    p_i_index = p_i[index]
+    other_product = P // p_i_index
+    inv = modinv(other_product, p_i_index)
+    return (other_product * inv) % P
     
 def partial_decrypt(index, share, c1, p_0, participants, p_i, q):
     P_S = 1
     for i in participants:
         P_S *= p_i[i]
-    lambda_i = langrange_coeffs(index, participants, p_i)
+    lambda_i = lagrange_coeffs(index, participants, p_i)
     exp = (share * lambda_i) % P_S
     final_exp = exp % q
     mu_i = pow(c1, final_exp, p_0)
@@ -106,7 +104,6 @@ def decrypt(c2, reconstruction, sd, p_0):
     k_random = randomness_extractor(sd, reconstruction, p_0)
     return c2 ^ k_random
 
-            
 if __name__ == "__main__":
     n = 5
     T = 25
@@ -118,7 +115,7 @@ if __name__ == "__main__":
 
     big_s, shares, q, p_i = weighted_setup(p_lambda, n, T, t, weights, small_s, q)
 
-    participants = {1,2,3}
+    participants = {0,3,4}
     session_weight = sum(weights[i] for i in participants)
     print(f"Session weight ({session_weight})")
 

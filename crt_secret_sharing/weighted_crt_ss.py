@@ -1,110 +1,21 @@
-import secrets
-from math import prod, ceil
+from math import ceil
 from typing import List, Optional
 from Crypto.Util.number import getPrime, isPrime
 from crt_secret_sharing.util_primes import generate_weighted_party_primes
 from crt_secret_sharing.crt_ss import share_distribution, share_reconstruction
 from crt_secret_sharing.bcolors import bcolors as bc
 
-# --- Approx. of min. and max. ---
+# --- Efficient WRSS ---
 
-def approx_min_product_weights(min_weight : int, weights : List[int], p_i : List[int]) -> int:
-    """
-    Approximation of the minimum product of the weights
+def validate_gap(T : int, t : int, p_lambda : int, factor : float):
+    required_gap = int(p_lambda * factor)
+    gap = (T - t)
+    if gap < required_gap:
+        raise ValueError(f"The gap (T - t) = {gap} is small. It should be at least Θ(λ) = {required_gap}")
+    else:
+        print(bc.OKGREEN + f"The gap between thresholds satisfies the scheme." + bc.ENDC)
 
-    Parameters
-    ----------
-        min_weight : int
-            The minimum weight for an authroized set.
-        weights : List[int]
-            List of shareholder's weights.
-        p_i : List[int]
-            List of distinct coprime integers for each shareholder.
-
-    Returns
-    -------
-        primes : int
-            Product of primes.
-    """
-    sorted_pairs = sorted(zip(weights, p_i), key=lambda x: x[1])
-    current_w = 0
-    primes = []
-    for w, p in sorted_pairs:
-        current_w += w
-        primes.append(p)
-        if current_w >= min_weight:
-            break
-    if current_w < min_weight:
-        print(f"Could not meet minimum weight")
-    return prod(primes) if primes else 1
-
-def approx_max_product_weights(max_weight : int, weights : List[int], p_i : List[int]) -> int:
-    """
-    Approximation of the maximum product of the weights
-
-    Parameters
-    ----------
-        max_weight : int
-            The maximum weight for approx.
-        weights : List[int]
-            List of shareholder's weights.
-        p_i : List[int]
-            List of distinct coprime integers for each shareholder.
-
-    Returns
-    -------
-        primes : int
-            Product of primes.
-    """
-    sorted_pairs = sorted(zip(weights, p_i), key=lambda x: x[1], reverse=True)
-    current_w = 0
-    primes = []
-    for w, p in sorted_pairs:
-        if current_w + w <= max_weight:
-            current_w += w
-            primes.append(p)
-    return prod(primes) if primes else 1
-
-# --- Computation of valid L ---
-
-def compute_valid_L(P_min : int, P_max : int, p_0 : int, p_lambda : int) -> int:
-    """
-    Computing the valid L for weighted ramp secret sharing.
-
-    Parameters
-    ----------
-        P_min : int
-            Min. approx.
-        P_max : int
-            Max. approx.
-        p_0 : int:
-            Order of field F.
-        p_lambda : int
-            Security parameter of bit length.
-
-    Returns
-    -------
-        upper_bound : int
-            Largest possible L.
-    """
-    # Validate that P_min and P_max didn't mess up
-    if P_min <= 0 or P_max <= 0:
-        raise ValueError("P_min and P_max must be positive")
-    
-    # Security lower bound (leakage)
-    lower_bound = P_max * (1 << p_lambda) + 1
-
-    # Correctness upper bound
-    upper_bound = P_min // p_0
-
-    # Validate that the upper bound is larger than lower bound
-    if lower_bound >= upper_bound:
-        raise ValueError("Could not satisfy both correcntess and security for weighted.")
-    return lower_bound
-
-# --- Computation of gap ---
-
-def compute_c(T : int, t : int, p_lambda : int) -> int:
+def efficient_scaling(T : int, t : int, weights : List[int], p_lambda : int):
     """
     Computes the constant needed for the ramp setting to hold. 
 
@@ -122,13 +33,17 @@ def compute_c(T : int, t : int, p_lambda : int) -> int:
         c : int
             Constant c for gap.
     """
-    gap = T - t
+    gap = T - t 
     if gap <= 0:
-        raise ValueError(f"The Reconstruction threshold ({T}) must be larger than Privacy threshold ({t}).")
-    req_prod = 2 * p_lambda + 1 
-    c = ceil(req_prod / gap)
-    # c >= ceil((2 * p_lambda + 1) / (T - t))
-    return max(1, c)
+        raise ValueError(f"Reconstruction threshold {T} must be bigger than Privacy threshold {t}.")
+    c = ceil((2 * p_lambda + 1) / gap)
+
+    scaled_weights = [c * w for w in weights]
+    scaled_T = c * T
+    scaled_t = c * t 
+
+    return scaled_T, scaled_t, scaled_weights, c
+    
 
 # --- Weighted CRT-SS Setup ---
 
@@ -171,30 +86,40 @@ def weighted_setup(p_lambda: int,
             List of distinct coprime integers for each shareholder.
 
     """
-    
+    # Weights cannot exceed number of shareholders
     if len(weights) > n:
         raise ValueError(f"Entries of weight ({len(weights)}) should not exceed shareholders ({n})")
+    
+    # Privacy threshold cannot be bigger than Reconstruction threshold
     if T <= t:
         raise ValueError(f"Privacy threshold ({t}) can not be higher than Reconstruction threshold ({T})")
+    
+    # Corollary 1 for Efficient WRSS
+    T, t, weights, c = efficient_scaling(T, t, weights, p_lambda)
+    print(bc.OKGREEN + f"The constant c is {c}." + bc.ENDC)
 
+    # Check for correctness for gap between threshold
+    validate_gap(T, t, p_lambda, 1.0)
+
+    # Recommended bit length
     if not p_lambda >= 128:
         print(bc.WARNING + f"Bit-length is recommended to be at least 128." + bc.ENDC)
     print(bc.OKGREEN + f"Security parameter is ({p_lambda}) bit length.")
     
+    # Validation of order
     if p_0 is None:
         p_0 = getPrime(p_lambda)
     elif not isPrime(p_0):
         raise ValueError(f"p_0 ({p_0}) has to be a prime.")
     print(bc.OKGREEN + f"Order of the field ({p_0}).")
 
+    # Generate party primes with weights
+    p_i = generate_weighted_party_primes(p_0, weights)
 
-    c = compute_c(T, t, p_lambda)
-    p_i = generate_weighted_party_primes(p_0, weights, c)
+    # Theorem 6 (p. 13)
+    L = (2 ** (t + p_lambda))
 
-    P_min = approx_min_product_weights(T, weights, p_i)
-    P_max = approx_max_product_weights(t, weights, p_i)
-    L = compute_valid_L(P_min, P_max, p_0, p_lambda)
-
+    # Make share distribtution from crt_ss
     big_s, shares, p_0, p_i = share_distribution(p_lambda, n, T, small_s, p_0, p_i, L, True)
     return big_s, shares, p_0, p_i
 
@@ -203,9 +128,9 @@ def weighted_setup(p_lambda: int,
 if __name__ == "__main__":
     n = 5
     T = 25
-    t = 10
-    weights = [2,7,9,10,12]
-    p_lambda = 128
+    t = 15
+    weights = [3,7,9,10,12]
+    p_lambda = 512
 
     big_s, shares, p_0, p_i = weighted_setup(p_lambda, n, T, t, weights, 420420, None)
     

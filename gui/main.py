@@ -1,134 +1,174 @@
 import math
 import ttkbootstrap as ttk
+import tkinter as tk
 from ttkbootstrap.constants import *
-from ttkbootstrap.dialogs import Querybox
+from ttkbootstrap.dialogs import Querybox, Messagebox
 from crt_secret_sharing.crt_ss import share_distribution, share_reconstruction
-from cards import ShareholderCard
 
-class PokerCRTShare:
+class ShareholderCard:
+    def __init__(self, app, canvas, x, y, share_id, idx, share_value):
+        self.app = app
+        self.canvas = canvas
+        self.idx = idx
+        self.share_id = share_id
+        self.share_value = share_value
+        self.is_selected = False
+
+        # Represent the Shareholders as small ovals
+        self.card_radius = 40
+        self.card = canvas.create_oval(
+            x - self.card_radius, y - self.card_radius,
+            x + self.card_radius, y + self.card_radius,
+            fill="white", outline="black", width=2, tags="card"
+        )
+
+        # Have the ID on the ovals
+        self.label = canvas.create_text(x, y, text=f"🂠 {share_id}", font=("Helvetica", 10, "bold"), tags="card")
+
+        # Have both the label and ovals be clickable for better user experience
+        canvas.tag_bind(self.card, "<Button-1>", self.toggle_select)
+        canvas.tag_bind(self.label, "<Button-1>", self.toggle_select)
+
+    def toggle_select(self, event=None):
+        self.is_selected = not self.is_selected
+        color = "gold" if self.is_selected else "white"
+        self.canvas.itemconfig(self.card, fill=color)
+        self.app.update_selection(self)
+
+    def get_reconstruction_data(self):
+        return (self.share_value)
+
+    def destroy(self):
+        self.canvas.delete(self.card)
+        self.canvas.delete(self.label)
+
+
+class PokerCRTApp:
     def __init__(self, root):
-
-        self.n = 0
-        self.T = 0
-        self.secret = 0
-        self.p_lambda = 0
-        self.S = 0
-        self.shares = []
-        self.P_0 = 0
-        self.p_i = []
-
-        self.cards = []
-        self.active_cards = {}
-
         self.root = root
-        self.root.title("CRT Secret Sharing")
+        self.root.title("Poker CRT Secret Sharing")
         self.root.geometry("1000x800")
+        self.root.configure(bg="#000000")
 
-        style = ttk.Style()
-        style.configure("TFrame", background="#0a5f38")
+        self.shares = []
+        self.cards = []
+        self.selected_cards = {}
+        self.p_0 = 0
+        self.p_i = []
+        self.T = 0
+        self.S = 0
 
-        self.poker_frame = ttk.Frame(root, bootstyle="TFrame")
-        self.poker_frame.pack(fill="both", expand=True)
+        # --- Top Controls ---
+        control_frame = ttk.Frame(self.root, padding=10)
+        control_frame.pack(fill=X)
 
-        self.left_panel = ttk.Frame(self.poker_frame, bootstyle="dark")
-        self.left_panel.place(relx = 0, rely = 0, relwidth = 0.25, relheight = 1)
+        self.generate_button = ttk.Button(control_frame, text="Generate Shares", bootstyle=(WARNING, OUTLINE), command=self.prompt_for_shares)
+        self.generate_button.pack(side=LEFT, padx=5)
 
-        self.panel_title = ttk.Label(
-            self.left_panel,
-            text="Shareholders",
-            font=("Helvetica", 12, "bold"),
-            anchor=ttk.CENTER,
-            bootstyle="inverse-dark"
-        )
-        self.panel_title.pack(fill="x", pady=10, padx=5)
+        self.reconstruct_button = ttk.Button(control_frame, text="Reconstruct Secret", bootstyle=(SUCCESS, OUTLINE), command=self.attempt_reconstruction)
+        self.reconstruct_button.pack(side=LEFT, padx=5)
 
-        self.container = ttk.Frame(self.left_panel, bootstyle="dark")
-        self.container.pack(fill="both", expand=True, padx=5, pady=5)
+        self.status_label = ttk.Label(control_frame, text="Welcome to the CRT Poker Table!", bootstyle="info", font=("Helvetica", 12))
+        self.status_label.pack(side=LEFT, padx=10)
 
-        self.recreation_area = ttk.Frame(
-            self.poker_frame, 
-            bootstyle="secondary",
-            width=400,
-            height=300
-        )
-        self.recreation_area.place(relx=0.5, rely=0.6, anchor="center", relwidth=0.5, relheight=0.4)
-        self.recreation_area.config(borderwidth=2, relief="groove")
+        # --- Poker Table Canvas ---
+        self.canvas = tk.Canvas(self.root, width=800, height=600)
+        self.canvas.configure(bg="#663300")
+        self.canvas.pack(pady=50)
 
-        self.status_frame = ttk.Frame(self.poker_frame, bootstyle="dark")
-        self.status_frame.place(relx=0.6, rely=0.1, anchor="center", relwidth=0.5, relheight=0.15)
-        
-        self.status_label = ttk.Label(
-            self.status_frame,
-            text="No shares generated yet",
-            font=("Helvetica", 12),
-            bootstyle="light"
-        )
-        self.status_label.pack(expand=True)
+        # Oval "table"
+        self.canvas.create_oval(100, 100, 700, 500, fill="#1a7e55", outline="#0f5e3d", width=8)
 
-        self.prompt_button = ttk.Button(
-            self.left_panel,
-            text="Generate SHARES",
-            bootstyle=(WARNING, "outline"),
-            command=self.prompt_for_shares
-        )
-        self.prompt_button.pack(pady=10, padx=5)
-    
     def prompt_for_shares(self):
         n = Querybox.get_integer(
             parent=self.root,
             title="Share distribution",
-            prompt="Enter n:",
-            initialvalue=5,
+            prompt="Enter number of shares:",
+            initialvalue=6
         )
-        if n is None:
-            return
-        
+        if n is None: return
+
         t = Querybox.get_integer(
             parent=self.root,
             title="Share distribution",
-            prompt="Enter the threshold value:",
+            prompt=f"Enter threshold (T ≤ {n}):",
+            minvalue=2,
+            maxvalue=n
         )
-        if t is None:
-            return
-        
+        if t is None: return
+
         secret = Querybox.get_integer(
             parent=self.root,
             title="Share distribution",
-            prompt="Enter the secret value:",
+            prompt="Enter the secret:",
+            initialvalue=1234
         )
-        if secret is None:
-            return
-        
+        if secret is None: return
+
         p_lambda = Querybox.get_integer(
             parent=self.root,
             title="Share distribution",
-            prompt="Enter lambda:",
-            initialvalue=64,
+            prompt="Enter λ (security bits):",
+            initialvalue=64
         )
-        if p_lambda is None:
-            return
-        self.n = n
-        self.T = t
-        self.secret = secret
-        self.p_lambda = p_lambda
-        self.S, self.shares, self.p_0, self.p_i = share_distribution(self.p_lambda, 
-                                              self.n, 
-                                              self.T, 
-                                              self.secret, 
-                                              None, 
-                                              None, 
-                                              None, 
-                                              False)
-        self.generate_cards()
-        
+        if p_lambda is None: return
 
-    def generate_cards(self):
-        for widget in self.container.winfo_children():
-            widget.destroy()
-        
-        self.cards = []
-        
+        self.T = t
+        try:
+            self.S, self.shares, self.p_0, self.p_i = share_distribution(p_lambda, n, t, secret, None, None, None, False)
+            self.status_label.config(text=f"Generated {n} shares. Select at least {t} to reconstruct.")
+            self.generate_cards(n)
+        except Exception as e:
+            Messagebox.show_error(str(e), "Error")
+
+    def generate_cards(self, n):
+        # Clear canvas
+        for card in self.cards:
+            card.destroy()
+        self.cards.clear()
+        self.selected_cards.clear()
+        self.canvas.delete("text")  # Clean up
+
+        # Place cards in a circle
+        cx, cy = 400, 300
+        radius = 200
+        for i in range(n):
+            angle = 2 * math.pi * i / n
+            x = cx + radius * math.cos(angle)
+            y = cy + radius * math.sin(angle)
+            card = ShareholderCard(self, self.canvas, x, y, str(i+1), i, self.shares[i])
+            self.cards.append(card)
+
+    def update_selection(self, card):
+        if card.is_selected:
+            self.selected_cards[card] = True
+        else:
+            self.selected_cards.pop(card, None)
+
+        selected_count = len(self.selected_cards)
+        msg = f"{selected_count} / {self.T} shares selected."
+        if selected_count >= self.T:
+            msg += " Ready to reconstruct!"
+        self.status_label.config(text=msg)
+
+    def attempt_reconstruction(self):
+        if len(self.selected_cards) < self.T:
+            Messagebox.show_warning("Not enough shares selected!", "Reconstruction failed")
+            return
+
+        shares_to_reconstruct = [c.get_reconstruction_data() for c in self.selected_cards]
+        print(f"{shares_to_reconstruct}")
+        indices_for_p_i = [c.idx for c in self.selected_cards]
+
+        try:
+            p_i_subset = [self.p_i[idx] for idx in indices_for_p_i]
+            secret = share_reconstruction(self.p_0, p_i_subset, shares_to_reconstruct)
+            Messagebox.show_info(f"Reconstructed secret: {secret}", "Success!")
+            self.status_label.config(text=f"Success! Secret reconstructed: {secret}")
+        except Exception as e:
+            Messagebox.show_error(str(e), "Reconstruction failed")
+
 if __name__ == "__main__":
     root = ttk.Window(themename="darkly")
-    app = PokerCRTShare(root)
+    app = PokerCRTApp(root)
     root.mainloop()

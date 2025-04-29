@@ -1,5 +1,7 @@
-import math
-from Crypto.Util.number import getPrime, isPrime, GCD
+from math import ceil
+from random import SystemRandom
+from Crypto.Util.number import getPrime, isPrime
+from crt_secret_sharing.util_crt import gcd
 
 def pairwise_coprime(primes):
     if not all(isPrime(p) for p in primes):
@@ -17,18 +19,25 @@ def generate_party_primes(n, p_0, p_lambda):
             primes.add(prime)
     return sorted(primes)
 
-def generate_weighted_party_primes(p_0, weights, c):
+def generate_weighted_party_primes(p_0, weights):
     num_p = len(weights)
     p_i = [0] * num_p
     generated_primes = {p_0}
+    cryptogen = SystemRandom()
 
     for i, w in enumerate(weights):
-        prime_length = max(8, math.ceil(c*w))
+        upper_bound = 2 ** w
+        try:
+            lower_bound = ceil(upper_bound * num_p // (num_p + 1))
+        except OverflowError:
+            raise ValueError("Constant c is way too big causing overflow error. Gap between the thresholds needs to be wider")
         while True:
-            prime = getPrime(prime_length)
-            if all(GCD(prime, p) == 1 for p in generated_primes):
-                p_i[i] = prime
-                generated_primes.add(prime)
+            candidate = cryptogen.randrange(lower_bound, upper_bound -1)
+            if candidate % 2 == 0:
+                candidate += 1
+            if isPrime(candidate) and all(gcd(candidate, p) == 1 for p in generated_primes):
+                p_i[i] = candidate
+                generated_primes.add(candidate)
                 break
         
     if 0 in p_i:

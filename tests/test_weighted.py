@@ -1,37 +1,45 @@
 import unittest
-import crt_secret_sharing.weighted_crt_ss as wcs
-import crt_secret_sharing.util_primes as up
-
+from crt_secret_sharing.weighted_crt_ss import weighted_setup, share_reconstruction
 
 class TestWithWeightedSecretSharing(unittest.TestCase):
 
-    def test_weighted(self):
+    def test_simple_succes(self):
         n = 5
-        T = 19
-        t = 12
-        weights = [3,7,9,10,12]
-        small_s = 420420
-        p_lambda = 64
+        T = 25
+        t = 10 
+        weights = [2, 7, 9, 10, 12]
+        p_lambda = 128
+        secret = 420420
 
-        c = max(1, p_lambda // (T - t + 1))
+        big_S, shares, p_0, p_i = weighted_setup(p_lambda, n, T, t, weights, secret, None)
+        shareholders = {1, 3, 4}
+        session_weight = sum(weights[i] for i in shareholders)
+        self.assertTrue(session_weight >= T)
 
-        p_0 = up.generate_prime(p_lambda)
-        p_i = up.generate_weighted_party_primes(p_0, weights, c)
+        shares_subset = [shares[i] for i in shareholders]
+        primes_subset = [p_i[i] for i in shareholders]
 
-        P_min = wcs.approx_min_product_weights(T, weights, p_i)
-        P_max = wcs.approx_max_product_weights(t, weights, p_i)
-        L = wcs.compute_random_L(P_min, P_max, p_0, p_lambda)
+        reconstruct_secret = share_reconstruction(p_0, primes_subset, shares_subset)
+        self.assertEqual(reconstruct_secret, secret)
 
-        big_s, shares = wcs.share_distribution(small_s, p_0, p_i, L)
+    def test_simple_fail(self):
+        n = 5
+        T = 25
+        t = 10 
+        weights = [2, 7, 9, 10, 12]
+        p_lambda = 128
+        secret = 420420
 
-        test_number = 3
-        shares_subset = shares[:test_number]
-        primes_subset = p_i[:test_number]
+        big_S, shares, p_0, p_i = weighted_setup(p_lambda, n, T, t, weights, secret, None)
+        shareholders = {0, 1}
+        session_weight = sum(weights[i] for i in shareholders)
+        self.assertTrue(session_weight <= t)
 
-        reconstructed_secret = wcs.share_reconstruction(p_0, primes_subset, shares_subset)
-        self.assertEqual(reconstructed_secret, small_s)
+        shares_subset = [shares[i] for i in shareholders]
+        primes_subset = [p_i[i] for i in shareholders]
 
-if __name__ == '__main__':
+        reconstruct_secret = share_reconstruction(p_0, primes_subset, shares_subset)
+        self.assertNotEqual(reconstruct_secret, secret)
+
+if __name__ == "__main__":
     unittest.main()
-
-        

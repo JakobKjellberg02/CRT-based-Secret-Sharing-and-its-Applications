@@ -56,7 +56,8 @@ def share_distribution(p_lambda: int,
     # Recommended bit length
     if not p_lambda >= 128:
         print(bc.WARNING + f"Bit-length is recommended to be at least 128." + bc.ENDC)
-    print(bc.OKGREEN + f"Security parameter is ({p_lambda}) bit length.")
+    elif not weighted:
+        print(bc.OKGREEN + f"Security parameter is ({p_lambda}) bit length.")
 
     # Validate that threshold does not exceed shareholders for unweighted
     if n < t and not weighted:
@@ -69,7 +70,8 @@ def share_distribution(p_lambda: int,
         p_0 = getPrime(p_lambda)
     elif not isPrime(p_0):
         raise ValueError(f"p_0 ({p_0}) has to be a prime.")
-    print(bc.OKGREEN + f"Order of the field ({p_0}).")
+    if not weighted:
+        print(bc.OKGREEN + f"Order of the field ({p_0})." + bc.ENDC)
 
     # Validation of distinct coprimes
     if p_i is None:
@@ -181,7 +183,7 @@ def crt_correctness(p_0 : int, p_i : List[int], threshold : int, big_L : Optiona
     P_min = prod(sorted_pi[:threshold])         # P_min is minimum product of primes for Authroized set A
                                                 # meaning we sort from lowest to highest and taking the 
                                                 # The product of first elements til threshold
-
+                                    
     if big_L is None:
         big_L = (P_min // (p_0 + 1)) - 1  # Upper bound limit to satisfy correctness
 
