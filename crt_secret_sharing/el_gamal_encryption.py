@@ -6,11 +6,17 @@ from crt_secret_sharing.weighted_crt_ss import weighted_setup
 from Crypto.Util.number import getPrime, isPrime
 
 def universal_hashing(x):
+    """
+    Universal hash function which uses SHA256.
+    """
     digest = hashes.Hash(hashes.SHA256())
     digest.update(str(x).encode())
     return int.from_bytes(digest.finalize(), 'big')
 
-def randomness_extractor(s, X, p):
+def randomness_extractor(s, X) -> int:
+    """
+    Randomness extractor from ElGamal session key using HKDF-SHA256.
+    """
     hkdfsha256 = HKDF(
         algorithm=hashes.SHA256(),
         length=32,
@@ -19,13 +25,28 @@ def randomness_extractor(s, X, p):
     )
     return int.from_bytes(hkdfsha256.derive(str(X).encode()),'big') 
 
-def find_generator(p, q):
+def find_generator(p : int, q : int) -> int:
+    """
+    Find generator g of a subgroup of order q in Z_p*.
+
+    Parameters
+    ----------
+        p : int 
+            Safe prime.
+        q : int 
+            Order.
+
+    Returns
+    -------
+        g : int
+            Generator.
+    """
     if (p - 1) % q != 0:
         raise ValueError("q must divide p-1")
 
     for g in range(2, p):
         if pow(g, q, p) == 1:
-             if p == 2*q + 1: 
+             if p == 2 * q + 1: 
                   if pow(g, 2, p) != 1:
                        return g
              else:
@@ -34,6 +55,9 @@ def find_generator(p, q):
     raise RuntimeError(f"Could not find generator of order {q} for prime {p}")
 
 def sample_group(p_lambda):
+    """
+    Sample safe prime p_0 and finds generator g.
+    """
     while True:
         q = getPrime(p_lambda)
         p_0 = 2 * q + 1
@@ -42,12 +66,18 @@ def sample_group(p_lambda):
             return p_0, q, small_g
 
 def keygen(p_lambda):
+    """
+    Key generation for ElGamal scheme.
+    """
     p_0, q, small_g = sample_group(p_lambda)
     s = secrets.randbelow(q-1) + 1
     h = pow(small_g, s, p_0)
     return p_0, q, small_g, s, h
 
 def encrypt(m, h, small_g, p_0, q):
+    """
+    ElGamal encryption.
+    """
     r = secrets.randbelow(q - 1) + 1
     c1 = pow(small_g, r, p_0)
     k = pow(h, r, p_0)
@@ -59,6 +89,9 @@ def encrypt(m, h, small_g, p_0, q):
     return (c2, sd, c1, h_k), r
 
 def lagrange_coeffs(index, participants, p_i):
+    """
+    Computing Lagrange coefficient for shareholder.
+    """
     P = 1
     for j in participants:
         P *= p_i[j]
@@ -68,6 +101,9 @@ def lagrange_coeffs(index, participants, p_i):
     return (other_product * inv) % P
     
 def partial_decrypt(index, share, c1, p_0, participants, p_i, q):
+    """
+    Partial decryption of ciphertext for a shareholder.
+    """
     P_S = 1
     for i in participants:
         P_S *= p_i[i]
@@ -78,6 +114,9 @@ def partial_decrypt(index, share, c1, p_0, participants, p_i, q):
     return mu_i
 
 def reconstruct(partial_decryptions, c1, h_k, p_0, participants, p_i, q):
+    """
+    Reconstruction of the key using Shareholders.
+    """
     mu = 1
     for i in participants:
         mu = (mu * partial_decryptions[i]) % p_0
@@ -101,6 +140,9 @@ def reconstruct(partial_decryptions, c1, h_k, p_0, participants, p_i, q):
     return None
 
 def decrypt(c2, reconstruction, sd, p_0):
+    """
+    ElGamal Decryption.
+    """
     k_random = randomness_extractor(sd, reconstruction, p_0)
     return c2 ^ k_random
 
@@ -113,7 +155,7 @@ if __name__ == "__main__":
 
     p_0, q, small_g, small_s, h = keygen(p_lambda)
 
-    big_s, shares, q, p_i = weighted_setup(p_lambda, n, T, t, weights, small_s, q)
+    big_s, shares, q, p_i, _ = weighted_setup(p_lambda, n, T, t, weights, small_s, q)
 
     participants = {0,3,4}
     session_weight = sum(weights[i] for i in participants)

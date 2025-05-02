@@ -121,7 +121,7 @@ def weighted_setup(p_lambda: int,
 
     # Make share distribtution from crt_ss
     big_s, shares, p_0, p_i = share_distribution(p_lambda, n, T, small_s, p_0, p_i, L, True)
-    return big_s, shares, p_0, p_i
+    return big_s, shares, p_0, p_i, c
 
 # --- Main ---
 
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     weights = [3,7,9,10,12]
     p_lambda = 512
 
-    big_s, shares, p_0, p_i = weighted_setup(p_lambda, n, T, t, weights, 420420, None)
+    big_s, shares, p_0, p_i, c = weighted_setup(p_lambda, n, T, t, weights, 420420, None)
     
     shareholders = {0,3,4}
     session_weight = sum(weights[i] for i in shareholders)

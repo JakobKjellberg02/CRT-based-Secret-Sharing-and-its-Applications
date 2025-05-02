@@ -32,9 +32,7 @@ def generate_weighted_party_primes(p_0, weights):
         except OverflowError:
             raise ValueError("Constant c is way too big causing overflow error. Gap between the thresholds needs to be wider")
         while True:
-            candidate = cryptogen.randrange(lower_bound, upper_bound -1)
-            if candidate % 2 == 0:
-                candidate += 1
+            candidate = cryptogen.randrange(lower_bound, upper_bound -1, 2)
             if isPrime(candidate) and all(gcd(candidate, p) == 1 for p in generated_primes):
                 p_i[i] = candidate
                 generated_primes.add(candidate)
