@@ -32,5 +32,13 @@ class TestWithUnweightedSecretSharing(unittest.TestCase):
         with self.assertRaises(ValueError):
             _, shares, p_0, p_i = share_distribution(16, 3, 2, 420420, None, [4, 6, 8], None, False)
 
+    def test_prime_too_big(self):
+        with self.assertRaises(ValueError):
+            _, shares, p_0, p_i = share_distribution(8, 3, 2, 420420, None, [7853, 7877, 7901], None, False)
+        
+    def test_too_many_primes(self):
+        with self.assertRaises(ValueError):
+            _, shares, p_0, p_i = share_distribution(256, 3, 2, 420420, None, [5501, 5167, 5197, 5009], None, False)
+
 if __name__ == '__main__':
     unittest.main()

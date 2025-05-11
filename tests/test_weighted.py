@@ -11,7 +11,7 @@ class TestWithWeightedSecretSharing(unittest.TestCase):
         p_lambda = 128
         secret = 420420
 
-        big_S, shares, p_0, p_i = weighted_setup(p_lambda, n, T, t, weights, secret, None)
+        _, shares, p_0, p_i, _ = weighted_setup(p_lambda, n, T, t, weights, secret, None)
         shareholders = {1, 3, 4}
         session_weight = sum(weights[i] for i in shareholders)
         self.assertTrue(session_weight >= T)
@@ -30,7 +30,7 @@ class TestWithWeightedSecretSharing(unittest.TestCase):
         p_lambda = 128
         secret = 420420
 
-        big_S, shares, p_0, p_i = weighted_setup(p_lambda, n, T, t, weights, secret, None)
+        _, shares, p_0, p_i, _ = weighted_setup(p_lambda, n, T, t, weights, secret, None)
         shareholders = {0, 1}
         session_weight = sum(weights[i] for i in shareholders)
         self.assertTrue(session_weight <= t)
@@ -40,6 +40,28 @@ class TestWithWeightedSecretSharing(unittest.TestCase):
 
         reconstruct_secret = share_reconstruction(p_0, primes_subset, shares_subset)
         self.assertNotEqual(reconstruct_secret, secret)
+
+    def test_privacy_threshold_too_big(self):
+        n = 5
+        T = 25
+        t = 30
+        weights = [2, 7, 9, 10, 12]
+        p_lambda = 128
+        secret = 420420
+
+        with self.assertRaises(ValueError):
+            _, shares, p_0, p_i, _ = weighted_setup(p_lambda, n, T, t, weights, secret, None)
+
+    def test_too_many_weights(self):
+        n = 5
+        T = 30
+        t = 25
+        weights = [2, 7, 9, 10, 12, 15]
+        p_lambda = 128
+        secret = 420420
+
+        with self.assertRaises(ValueError):
+            _, shares, p_0, p_i, _ = weighted_setup(p_lambda, n, T, t, weights, secret, None)
 
 if __name__ == "__main__":
     unittest.main()
