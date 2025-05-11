@@ -24,7 +24,7 @@ class TestWithUnweightedSecretSharing(unittest.TestCase):
             _, shares, p_0, p_i = share_distribution(16, 3, 2, 420420, 3, [43451, 43607, 59513], 
                                                      1000000000000000, False)
     
-    def test_order_of_field(self):
+    def test_order_of_field_failed(self):
         with self.assertRaises(ValueError):
             _, shares, p_0, p_i = share_distribution(16, 3, 2, 420420, 8, None, None, False)
     

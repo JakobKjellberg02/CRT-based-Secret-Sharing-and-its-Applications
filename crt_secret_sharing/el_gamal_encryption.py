@@ -269,7 +269,6 @@ def reconstruct(partial_decryptions : dict, c1 : int, h_k : int, p_0 : int, shar
         P *= p_i[i]
     
     max_overflow = len(shareholders)
-    print(f"Reconstructing: mu={mu}, c1={c1}, P_S={P}, p_0={p_0}")
     for j in range(max_overflow + 1):
         exp_inv = (-j * P) % q
 
