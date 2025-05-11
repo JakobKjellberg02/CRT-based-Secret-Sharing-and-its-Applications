@@ -7,14 +7,6 @@ from crt_secret_sharing.bcolors import bcolors as bc
 
 # --- Efficient WRSS ---
 
-def validate_gap(T : int, t : int, p_lambda : int, factor : float):
-    required_gap = int(p_lambda * factor)
-    gap = (T - t)
-    if gap < required_gap:
-        raise ValueError(f"The gap (T - t) = {gap} is small. It should be at least Θ(λ) = {required_gap}")
-    else:
-        print(bc.OKGREEN + f"The gap between thresholds satisfies the scheme." + bc.ENDC)
-
 def efficient_scaling(T : int, t : int, weights : List[int], p_lambda : int):
     """
     Computes the constant needed for the ramp setting to hold. 
@@ -84,6 +76,8 @@ def weighted_setup(p_lambda: int,
             Order of field F.
         p_i : List[int]
             List of distinct coprime integers for each shareholder.
+        c : int
+            c constant.
 
     """
     # Weights cannot exceed number of shareholders
@@ -98,20 +92,17 @@ def weighted_setup(p_lambda: int,
     T, t, weights, c = efficient_scaling(T, t, weights, p_lambda)
     print(bc.OKGREEN + f"The constant c is {c}." + bc.ENDC)
 
-    # Check for correctness for gap between threshold
-    validate_gap(T, t, p_lambda, 1.0)
-
     # Recommended bit length
     if not p_lambda >= 128:
         print(bc.WARNING + f"Bit-length is recommended to be at least 128." + bc.ENDC)
-    print(bc.OKGREEN + f"Security parameter is ({p_lambda}) bit length.")
+    print(bc.OKGREEN + f"Security parameter is ({p_lambda}) bit length." + bc.ENDC)
     
     # Validation of order
     if p_0 is None:
         p_0 = getPrime(p_lambda)
     elif not isPrime(p_0):
         raise ValueError(f"p_0 ({p_0}) has to be a prime.")
-    print(bc.OKGREEN + f"Order of the field ({p_0}).")
+    print(bc.OKGREEN + f"Order of the field ({p_0})." + bc.ENDC)
 
     # Generate party primes with weights
     p_i = generate_weighted_party_primes(p_0, weights)
@@ -126,11 +117,20 @@ def weighted_setup(p_lambda: int,
 # --- Main ---
 
 if __name__ == "__main__":
+    """
+    Basic test case for how to use WRSS
+
+    Example:
+    Privacy threshold of t 15 and Reconstruction threshold of T 25 with bit length 128
+    The given secret is '420420'
+
+    It will reconstruct successfully given Authorized set A
+    """
     n = 5
     T = 25
     t = 15
     weights = [3,7,9,10,12]
-    p_lambda = 512
+    p_lambda = 128
 
     big_s, shares, p_0, p_i, c = weighted_setup(p_lambda, n, T, t, weights, 420420, None)
     

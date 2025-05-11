@@ -1,5 +1,5 @@
 from math import ceil
-from random import SystemRandom
+from secrets import SystemRandom
 from Crypto.Util.number import getPrime, isPrime
 from crt_secret_sharing.util_crt import gcd
 
@@ -40,4 +40,4 @@ def generate_weighted_party_primes(p_0, weights):
         
     if 0 in p_i:
         raise ValueError(f"Failed to generate unique primes")
-    return p_i
+    return sorted(p_i)
