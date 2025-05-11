@@ -258,7 +258,7 @@ def reconstruct(partial_decryptions : dict, c1 : int, h_k : int, p_0 : int, shar
 
     Returns
     -------
-        potential_k -> int
+        potential_k : int
             Potential candidate for value.
     """
     mu = 1
@@ -297,7 +297,7 @@ def decrypt(c2 : int, reconstruction : int, sd : int) -> int:
 
     Returns
     -------
-        decrypted -> int
+        decrypted : int
             Decrypted message.
     """
     k_random = randomness_extractor(sd, reconstruction)
