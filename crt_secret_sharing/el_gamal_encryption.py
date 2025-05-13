@@ -278,8 +278,7 @@ def reconstruct(partial_decryptions : dict, c1 : int, h_k : int, p_0 : int, shar
         if universal_hashing(potential_k) == h_k:
             return potential_k
     
-    print("Reconstruction failed: No matching hash")
-    return None
+    raise ValueError("Reconstruction failed: No matching hash")
 
 def decrypt(c2 : int, reconstruction : int, sd : int) -> int:
     """
