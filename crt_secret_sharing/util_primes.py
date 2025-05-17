@@ -24,23 +24,22 @@ def generate_weighted_party_primes(p_0, weights):
     num_p = len(weights)
     p_i = [0] * num_p
     generated_primes = {p_0}
+    cryptogen = SystemRandom()
 
     for i, w in enumerate(weights):
-        candidate_found = False
         upper_bound = 2 ** w
         try:
             lower_bound = ceil(upper_bound * num_p // (num_p + 1))
         except OverflowError:
             raise ValueError("Constant c is way too big causing overflow error. " \
             "Gap between the thresholds needs to be wider")
-        while not candidate_found:
-            for j in range(lower_bound, upper_bound):
-                candidate = prevprime(j)
-                if isPrime(candidate) and all(gcd(candidate, p) == 1 for p in generated_primes):
-                    p_i[i] = candidate
-                    generated_primes.add(candidate)
-                    candidate_found = True
-                    break
+        while True:
+            random_cand = cryptogen.randrange(lower_bound, upper_bound)
+            candidate = prevprime(random_cand)
+            if isPrime(candidate) and all(gcd(candidate, p) == 1 for p in generated_primes):
+                 p_i[i] = candidate
+                 generated_primes.add(candidate)
+                 break
     if 0 in p_i:
         raise ValueError(f"Failed to generate unique primes")
     return p_i

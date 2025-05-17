@@ -193,9 +193,9 @@ def lagrange_coeffs(index : int, shareholders : set[int], p_i : List[int]) -> in
     for j in shareholders:
         P *= p_i[j]
     p_i_index = p_i[index]
-    other_product = P // p_i_index
-    inv = modinv(other_product, p_i_index)
-    return (other_product * inv) % P
+    Q_i = P // p_i_index
+    Q_inv_i = modinv(Q_i, p_i_index)
+    return (Q_i * Q_inv_i) % P
     
 def partial_decrypt(index : int, share : int, c1 : int, p_0 : int, shareholders : set[int], 
                     p_i : List[int], q : int) -> int:

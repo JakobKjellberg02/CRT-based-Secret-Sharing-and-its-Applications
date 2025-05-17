@@ -62,6 +62,25 @@ class TestWithWeightedSecretSharing(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             _, shares, p_0, p_i, _ = weighted_setup(p_lambda, n, T, t, weights, secret, None)
+    
+    def test_weights_are_coprime(self):
+        n = 5
+        T = 25
+        t = 15
+        weights = [10,10,10,10,10]
+        p_lambda = 128
+        secret = 420420
+
+        _, shares, p_0, p_i, _ = weighted_setup(p_lambda, n, T, t, weights, secret, None)
+        shareholders = {0, 1, 2}
+        session_weight = sum(weights[i] for i in shareholders)
+        self.assertTrue(session_weight >= T)
+
+        shares_subset = [shares[i] for i in shareholders]
+        primes_subset = [p_i[i] for i in shareholders]
+
+        reconstruct_secret = share_reconstruction(p_0, primes_subset, shares_subset)
+        self.assertEqual(reconstruct_secret, secret)
 
 if __name__ == "__main__":
     unittest.main()

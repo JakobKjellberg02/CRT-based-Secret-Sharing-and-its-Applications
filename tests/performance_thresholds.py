@@ -3,7 +3,7 @@ import csv
 from time import time
 from crt_secret_sharing.weighted_crt_ss import weighted_setup, share_reconstruction
 
-def export_efficiency_to_csv(results, filename="wrss_efficiency.csv"):
+def export_efficiency_to_csv(results, filename):
     with open(filename, mode='w', newline='') as csvfile:
         fieldnames = ['t', 'c', 'avg_prime_bits', 'total_prime_bits', 'runtime']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -73,6 +73,6 @@ if __name__ == "__main__":
     n = len(weights)
     results = test_of_efficiency(p_lambda, weights, n, 300)
     plot_efficiency(results)
-    export_efficiency_to_csv(results, "wrss_efficiency_128bits.csv")
+    export_efficiency_to_csv(results, "performance_thresholds_0to269_256bits.csv")
 
     
