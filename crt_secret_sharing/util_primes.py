@@ -37,9 +37,10 @@ def generate_weighted_party_primes(p_0, weights):
             random_cand = cryptogen.randrange(lower_bound, upper_bound)
             candidate = prevprime(random_cand)
             if isPrime(candidate) and all(gcd(candidate, p) == 1 for p in generated_primes):
-                 p_i[i] = candidate
-                 generated_primes.add(candidate)
-                 break
+                if candidate >= lower_bound:
+                    p_i[i] = candidate
+                    generated_primes.add(candidate)
+                    break
     if 0 in p_i:
         raise ValueError(f"Failed to generate unique primes")
     return p_i
