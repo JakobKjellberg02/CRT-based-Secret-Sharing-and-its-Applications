@@ -1,4 +1,5 @@
 from math import ceil
+from sympy import prevprime
 from secrets import SystemRandom
 from Crypto.Util.number import getPrime, isPrime
 from crt_secret_sharing.util_crt import gcd
@@ -23,7 +24,6 @@ def generate_weighted_party_primes(p_0, weights):
     num_p = len(weights)
     p_i = [0] * num_p
     generated_primes = {p_0}
-    cryptogen = SystemRandom()
 
     for i, w in enumerate(weights):
         upper_bound = 2 ** w
@@ -33,12 +33,12 @@ def generate_weighted_party_primes(p_0, weights):
             raise ValueError("Constant c is way too big causing overflow error. " \
             "Gap between the thresholds needs to be wider")
         while True:
-            candidate = cryptogen.randrange(lower_bound, upper_bound -1, 2)
+            candidate = prevprime(upper_bound)
             if isPrime(candidate) and all(gcd(candidate, p) == 1 for p in generated_primes):
-                p_i[i] = candidate
-                generated_primes.add(candidate)
-                break
-        
+                if candidate > lower_bound:
+                    p_i[i] = candidate
+                    generated_primes.add(candidate)
+                    break
     if 0 in p_i:
         raise ValueError(f"Failed to generate unique primes")
     return sorted(p_i)

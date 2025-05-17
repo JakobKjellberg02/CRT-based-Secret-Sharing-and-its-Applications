@@ -44,14 +44,14 @@ def plot_efficiency(results):
 
 def test_of_efficiency(p_lambda, weights, n, T):
     result = []
-    for t in range(0,100):
+    for t in range(0,270):
         shareholders = {1,2,3}
         start_time = time()
         _, shares, p_0, p_i, c = weighted_setup(p_lambda, n, T, t, weights, 420420, None)
+        stop_time = time() -  start_time
         shares_subset = [shares[i] for i in shareholders]
         primes_subset = [p_i[i] for i in shareholders]
         reconstructed_secret = share_reconstruction(p_0, primes_subset, shares_subset)
-        stop_time = time() -  start_time
         assert(reconstructed_secret == 420420)
 
         prime_size = [p.bit_length() for p in p_i]
@@ -68,7 +68,7 @@ def test_of_efficiency(p_lambda, weights, n, T):
     return result
 
 if __name__ == "__main__":
-    p_lambda = 128
+    p_lambda = 256
     weights = [60, 80, 100, 120, 140]
     n = len(weights)
     results = test_of_efficiency(p_lambda, weights, n, 300)

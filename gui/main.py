@@ -4,10 +4,11 @@ import tkinter as tk
 from ttkbootstrap.constants import *
 from ttkbootstrap.tooltip import ToolTip
 from ttkbootstrap.dialogs import Querybox, Messagebox
-from crt_secret_sharing.crt_ss import share_distribution, share_reconstruction
+from crt_secret_sharing.el_gamal_encryption import keygen, encrypt, partial_decrypt, reconstruct, decrypt
+from crt_secret_sharing.weighted_crt_ss import weighted_setup
 
 class ShareholderCard:
-    def __init__(self, app, canvas, x, y, share_id, idx, share_value, weight = 1):
+    def __init__(self, app, canvas, x, y, share_id, idx, share_value, weight):
         self.app = app
         self.canvas = canvas
         self.idx = idx
@@ -24,15 +25,19 @@ class ShareholderCard:
         )
 
         self.label = canvas.create_text(x, y, text=f"🂠 {share_id}", font=("Helvetica", 10, "bold"), tags="card")
+        self.weight_label = canvas.create_text(x, y + 15, text=f"W: {weight}", font=("Helvetica", 8), tags="card")
 
         canvas.tag_bind(self.card, "<Button-1>", self.toggle_select)
         canvas.tag_bind(self.label, "<Button-1>", self.toggle_select)
+        canvas.tag_bind(self.weight_label, "<Button-1>", self.toggle_select)
 
         # Binding for tooltip show/hide
         canvas.tag_bind(self.card, "<Enter>", self.on_enter)
         canvas.tag_bind(self.label, "<Enter>", self.on_enter)
+        canvas.tag_bind(self.weight_label, "<Enter>", self.on_enter)
         canvas.tag_bind(self.card, "<Leave>", self.on_leave)
         canvas.tag_bind(self.label, "<Leave>", self.on_leave)
+        canvas.tag_bind(self.weight_label, "<Leave>", self.on_leave)
 
     def build_tooltip_text(self):
         return (
@@ -99,14 +104,26 @@ class PokerCRTApp:
         self.root.configure(bg="#000000")
 
         self.shares = []
+        self.p_i = []
+        self.weights = []
+        self.T = 0
+        self.t = 0
+        self.p_0 = 0
+        self.q = 0
+        self.small_g = 0
+        self.small_s = 0
+        self.pk = 0
+        self.c2 = 0
+        self.seed = 0
+        self.c1 = 0
+        self.h_k = 0
+        self.ciphertext = None
+
         self.cards = []
         self.selected_cards = {}
-        self.p_0 = 0
-        self.p_i = []
-        self.T = 0
-        self.S = 0
-        self.weights = []
-        self.weighted = False
+        self.encrypted_message = None
+        self.current_weight = 0
+        self.shareholder_count = 0
 
         # Tooltip management
         self.tooltip_anchor = tk.Label(self.root)
@@ -173,31 +190,6 @@ class PokerCRTApp:
             self.tooltip_timer = None
 
     def prompt_for_shares(self):
-        n = Querybox.get_integer(
-            parent=self.root,
-            title="Share distribution",
-            prompt="Enter number of shares:",
-            initialvalue=6
-        )
-        if n is None: return
-
-        t = Querybox.get_integer(
-            parent=self.root,
-            title="Share distribution",
-            prompt=f"Enter threshold (T ≤ {n}):",
-            minvalue=2,
-            maxvalue=n
-        )
-        if t is None: return
-
-        secret = Querybox.get_integer(
-            parent=self.root,
-            title="Share distribution",
-            prompt="Enter the secret:",
-            initialvalue=1234
-        )
-        if secret is None: return
-
         p_lambda = Querybox.get_integer(
             parent=self.root,
             title="Share distribution",
@@ -206,10 +198,61 @@ class PokerCRTApp:
         )
         if p_lambda is None: return
 
-        self.T = t
+        n = Querybox.get_integer(
+            parent=self.root,
+            title="Efficient Weighted Threshold Encryption",
+            prompt="Enter number of shareholders:",
+            initialvalue=3,
+            minvalue=2
+        )
+        if n is None: return
+
+        weights = []
+        for i in range(n):
+            weight = Querybox.get_integer(
+                parent=self.root,
+                title="Efficient Weighted Threshold Encryption",
+                prompt=f"Enter weight for shareholder {i+1}:",
+                initialvalue=(i+1)*10,
+                minvalue=1
+            )
+            if weight is None: return
+            weights.append(weight)
+
+        t = Querybox.get_integer(
+            parent=self.root,
+            title="Efficient Weighted Threshold Encryption",
+            prompt=f"Enter privacy threshold:",
+            initialvalue=int(0.3 * sum(weights))
+        )
+        if t is None: return
+
+        T = Querybox.get_integer(
+            parent=self.root,
+            title="Efficient Weighted Threshold Encryption",
+            prompt=f"Enter reconstruction threshold:",
+            initialvalue=int(0.7 * sum(weights))
+        )
+        if T is None: return
+
+        message = Querybox.get_integer(
+            parent=self.root,
+            title="Share distribution",
+            prompt="Enter the message (Type int):",
+            initialvalue=1234
+        )
+        if message is None: return
+
+        self.weights = weights
+        self.t = t
+        self.T = T
+
         try:
-            self.S, self.shares, self.p_0, self.p_i = share_distribution(p_lambda, n, t, secret, None, None, None, False)
-            self.status_label.config(text=f"Generated {n} shares. Select at least {t} to reconstruct.")
+            self.p_0, self.q, self.small_g, self.small_s, self.pk = keygen(p_lambda)
+            _, self.shares, self.q, self.p_i, _ = weighted_setup(p_lambda, n, T, t, weights, self.small_s, self.q)
+            self.ciphertext, _ = encrypt(message, self.pk, self.small_g, self.p_0, self.q)
+            self.c2, self.seed, self.c1, self.h_k = self.ciphertext
+            self.status_label.config(text=f"Generated {n} shareholders.")
             self.generate_cards(n)
         except Exception as e:
             Messagebox.show_error(str(e), "Error")
@@ -229,7 +272,7 @@ class PokerCRTApp:
             angle = 2 * math.pi * i / n
             x = cx + radius * math.cos(angle)
             y = cy + radius * math.sin(angle)
-            card = ShareholderCard(self, self.canvas, x, y, str(i+1), i, self.shares[i])
+            card = ShareholderCard(self, self.canvas, x, y, str(i+1), i, self.shares[i], self.weights[i])
             self.cards.append(card)
 
     def update_selection(self, card):
@@ -238,25 +281,30 @@ class PokerCRTApp:
         else:
             self.selected_cards.pop(card, None)
 
-        selected_count = len(self.selected_cards)
-        msg = f"{selected_count} / {self.T} shares selected."
-        if selected_count >= self.T:
-            msg += " Ready to reconstruct!"
-        self.status_label.config(text=msg)
+        selected_cards = list(self.selected_cards.keys())
+        self.current_weight = sum(card.weight for card in selected_cards)
+        self.shareholder_count = len(selected_cards)
+
+        self.status_label.config(text=f"{self.shareholder_count} shareholders selected with total weight {self.current_weight}.")
 
     def attempt_reconstruction(self):
-        if len(self.selected_cards) < self.T:
-            Messagebox.show_warning("Not enough shares selected!", "Reconstruction failed")
-            return
-
-        shares_to_reconstruct = [c.get_reconstruction_data() for c in self.selected_cards]
-        indices_for_p_i = [c.idx for c in self.selected_cards]
-
         try:
-            p_i_subset = [self.p_i[idx] for idx in indices_for_p_i]
-            secret = share_reconstruction(self.p_0, p_i_subset, shares_to_reconstruct)
-            Messagebox.show_info(f"Reconstructed secret: {secret}", "Success!")
-            self.status_label.config(text=f"Success! Secret reconstructed: {secret}")
+            shareholders = set(card.idx for card in self.selected_cards)
+            partial_decryptions = {}
+            for card in self.selected_cards:
+                mu_i = partial_decrypt(
+                    card.idx, card.share_value, self.c1, self.p_0, shareholders,
+                    self.p_i, self.q
+                )
+                partial_decryptions[card.idx] = mu_i
+            
+            k_constructed = reconstruct(partial_decryptions, self.c1, self.h_k,self.p_0, shareholders, 
+                                        self.p_i, self.q)
+            
+            decrypted_message = decrypt(self.c2, k_constructed, self.seed)
+            Messagebox.show_info(f"Decrypted message: {decrypted_message}", "Success!")
+            self.status_label.config(text=f"Success! Message decrypted: {decrypted_message}")
+                                     
         except Exception as e:
             Messagebox.show_error(str(e), "Reconstruction failed")
 

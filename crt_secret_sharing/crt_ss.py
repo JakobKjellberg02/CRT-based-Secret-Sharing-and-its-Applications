@@ -77,7 +77,7 @@ def share_distribution(p_lambda: int,
     if p_i is None:
         p_i = generate_party_primes(n, p_0, p_lambda)
     if not weighted:
-        if not pairwise_coprime(p_i + [p_0]) or not primes_within_bitlength(p_i + [p_0], p_lambda) or len(p_i) == n:
+        if not pairwise_coprime(p_i + [p_0]) or not primes_within_bitlength(p_i + [p_0], p_lambda) or not len(p_i) == n:
             raise ValueError("The given primes were not pairwise coprime, were over bit length "
             "or more entries of then given amount of Shareholders")
     print(bc.OKGREEN + f"The distict primes ({p_i})." + bc.ENDC)
