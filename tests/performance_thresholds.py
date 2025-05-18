@@ -44,7 +44,7 @@ def plot_efficiency(results):
 
 def test_of_efficiency(p_lambda, weights, n, T):
     result = []
-    for t in range(0,270):
+    for t in range(0,285):
         shareholders = {1,2,3}
         start_time = time()
         _, shares, p_0, p_i, c = weighted_setup(p_lambda, n, T, t, weights, 420420, None)

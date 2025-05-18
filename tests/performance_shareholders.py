@@ -13,6 +13,21 @@ def export_efficiency_to_csv(results, filename):
         for row in results:
             writer.writerow(row)
 
+def plot_efficiency(results):
+    shareholders = [r['shareholders'] for r in results]
+    setup_runtime = [r['setup_runtime'] for r in results]
+    encrypt_runtime = [r['encrypt_runtime'] for r in results]
+    plt.figure(figsize=(12, 6))
+    plt.plot(shareholders, setup_runtime, marker='o', label='WRSS Setup (s)')
+    plt.plot(shareholders, encrypt_runtime, marker='s', label='Encryption (s)')
+    plt.title("Performance of ElGamal + WRSS vs Number of Users")
+    plt.xlabel("Number of Shareholders (n)")
+    plt.ylabel("Time (s)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
 def test_of_elgamal(start, end, p_lambda, sameweights=False):
     result = []
     shareholders = list(range(start, end))  
@@ -52,7 +67,9 @@ if __name__ == "__main__":
     p_lambda = 256
     results = test_of_elgamal(start, end, p_lambda)
     export_efficiency_to_csv(results, f"performance_shareholders_{start}to{end - 1}_{p_lambda}bits.csv")
+    plot_efficiency(results)
     results = test_of_elgamal(start, end, p_lambda, sameweights=True)
     export_efficiency_to_csv(results, f"performance_shareholders_{start}to{end - 1}_sameW_{p_lambda}bits.csv")
+    plot_efficiency(results)
 
     
