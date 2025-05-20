@@ -69,13 +69,9 @@ def find_generator(p : int, q : int) -> int:
         raise ValueError("q must divide p-1")
 
     for g in range(2, p):
-        if pow(g, q, p) == 1:
-             if p == 2 * q + 1: 
-                  if pow(g, 2, p) != 1:
-                       return g
-             else:
-                  return g
-
+        if pow(g, q, p) == 1 and pow(g, 2, p) != 1:
+            return g
+        
     raise RuntimeError(f"Could not find generator of order {q} for prime {p}")
 
 def sample_group(p_lambda : int) -> tuple[int, int, int]:
