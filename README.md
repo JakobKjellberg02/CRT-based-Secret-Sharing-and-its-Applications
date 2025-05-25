@@ -9,6 +9,12 @@ Use the package manager to install the package.
 pip install .
 ```
 
+To get the required dependencies run the following command.
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Usage
 
 ```python
