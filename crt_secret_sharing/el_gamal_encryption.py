@@ -1,5 +1,5 @@
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from Crypto.Hash import SHA256
+from Crypto.Protocol.KDF import HKDF
 import secrets
 from typing import List, Optional
 from crt_secret_sharing.util_crt import modinv
@@ -20,9 +20,9 @@ def universal_hashing(x : int) -> int:
         integer : int
             SHA256 hash integer.
     """
-    digest = hashes.Hash(hashes.SHA256())
+    digest = SHA256.new()
     digest.update(str(x).encode())
-    return int.from_bytes(digest.finalize(), 'big')
+    return int.from_bytes(digest.digest(), 'big')
 
 def randomness_extractor(s : int, X : int) -> int:
     """
@@ -42,12 +42,13 @@ def randomness_extractor(s : int, X : int) -> int:
 
     """
     hkdfsha256 = HKDF(
-        algorithm=hashes.SHA256(),
-        length=32,
+        master=str(X).encode(),
+        hashmod=SHA256,
+        key_len=32,
         salt=s.to_bytes(32, 'big'), # Will get converted from int -> bytes
-        info=b'wrss-elgamal'
+        context=b'wrss-elgamal'
     )
-    return int.from_bytes(hkdfsha256.derive(str(X).encode()),'big') 
+    return int.from_bytes(hkdfsha256,'big') 
 
 def find_generator(p : int, q : int) -> int:
     """
