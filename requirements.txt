@@ -5,3 +5,4 @@ pycparser==2.22
 pycryptodome==3.23.0
 sympy==1.14.0
 ttkbootstrap==1.13.8
+matplot==0.1.9
